@@ -133,6 +133,9 @@ class SearchAgent(Agent):
         else:
             return Directions.STOP
 
+
+
+
 class PositionSearchProblem(search.SearchProblem):
     """
     A search problem defines the state space, start state, goal test, successor
@@ -153,6 +156,7 @@ class PositionSearchProblem(search.SearchProblem):
         goal: A position in the gameState
         """
         self.walls = gameState.getWalls()
+        print(self.walls)
         self.startState = gameState.getPacmanPosition()
         if start != None: self.startState = start
         self.goal = goal
@@ -225,6 +229,163 @@ class PositionSearchProblem(search.SearchProblem):
             if self.walls[x][y]: return 999999
             cost += self.costFn((x,y))
         return cost
+
+
+class LimitedSearchAgent(SearchAgent):
+    """
+    An agent for position search with a cost function that penalizes being in
+    positions on the West side of the board.
+
+    The cost function for stepping into a position (x,y) is 1/2^x.
+    """
+    def __init__(self):
+        self.searchFunction = search.dStarLiteSearch
+        self.searchType = LimitedPositionSearchProblem
+        self.range = 2
+        self.back_trace = {}
+        self.rhs_map = {}
+        self.g_map = {}
+        self.km = 0
+        self.position = None
+        self.goal = None
+        self.frontier = util.PriorityQueue()
+
+    # def registerInitialState(self, state):
+    #     """
+    #     This is the first time that the agent sees the layout of the game
+    #     board. Here, we choose a path to the goal. In this phase, the agent
+    #     should compute the path to the goal and store it in a local variable.
+    #     All of the work is done in this method!
+    #
+    #     state: a GameState object (pacman.py)
+    #     """
+    #     self.position = None
+    #     self.goal = None
+    #     # self.frontier.push(self.goal, self.calculate_key(self.goal))
+    #     # self.back_trace[self.goal] = None
+    #
+    #     if self.searchFunction == None: raise Exception, "No search function provided for SearchAgent"
+    #     starttime = time.time()
+    #     problem = self.searchType(state) # Makes a new search problem
+    #     self.position = problem.getStartState()
+    #     self.goal = problem.getGoalState()
+    #     self.actions  = self.searchFunction(problem, self) # Find a path
+    #     totalCost = problem.getCostOfActions(self.actions)
+    #     print('Path found with total cost of %d in %.1f seconds' % (totalCost, time.time() - starttime))
+    #     if '_expanded' in dir(problem): print('Search nodes expanded: %d' % problem._expanded)
+
+
+
+class LimitedPositionSearchProblem(search.SearchProblem):
+    """
+    A search problem defines the state space, start state, goal test, successor
+    function and cost function.  This search problem can be used to find paths
+    to a particular point on the pacman board.
+
+    The state space consists of (x,y) positions in a pacman game.
+
+    Note: this search problem is fully specified; you should NOT change it.
+    """
+
+    def __init__(self, gameState, costFn = lambda x: 1, goal=(1,1), start=None, warn=True, visualize=True):
+        """LimitedPositionSearchProblem
+        Stores the start and goal.
+
+        gameState: A GameState object (pacman.py)
+        costFn: A function from a search state (tuple) to a non-negative number
+        goal: A position in the gameState
+        """
+        # self.walls = gameState.getWalls()
+        self.gstate = gameState
+        self.walls = gameState.getHiddenWalls()
+        self.startState = gameState.getPacmanPosition()
+        if start != None: self.startState = start
+        self.goal = goal
+        self.costFn = costFn
+        self.visualize = visualize
+        if warn and (gameState.getNumFood() != 1 or not gameState.hasFood(*goal)):
+            print 'Warning: this does not look like a regular search maze'
+
+        # For display purposes
+        self._visited, self._visitedlist, self._expanded = {}, [], 0 # DO NOT CHANGE
+
+    def update_walls(self, state, size):
+        new_walls = self.gstate.getLocalWalls(state, size)
+        # for col in range(1,walls.width-1):
+        #     for row in range(1,walls.height-1):
+        #         self.walls[col][row] = new_walls[col][row] or self.walls[col][row]
+        x,y = state
+        for col in range(max(1,x-size),min(self.walls.width-1,x+size+1)):
+            for row in range(max(1,y-size),min(self.walls.height-1,y+size+1)):
+                self.walls[col][row] = new_walls[col][row]
+
+        return self.walls
+
+    def getStartState(self):
+        return self.startState
+
+    def getGoalState(self):
+        return self.goal
+
+    def isGoalState(self, state):
+        isGoal = state == self.goal
+
+        # For display purposes only
+        if isGoal and self.visualize:
+            self._visitedlist.append(state)
+            import __main__
+            if '_display' in dir(__main__):
+                if 'drawExpandedCells' in dir(__main__._display): #@UndefinedVariable
+                    __main__._display.drawExpandedCells(self._visitedlist) #@UndefinedVariable
+
+        return isGoal
+
+    def getSuccessors(self, state):
+        """
+        Returns successor states, the actions they require, and a cost of 1.
+
+         As noted in search.py:
+             For a given state, this should return a list of triples,
+         (successor, action, stepCost), where 'successor' is a
+         successor to the current state, 'action' is the action
+         required to get there, and 'stepCost' is the incremental
+         cost of expanding to that successor
+        """
+
+        successors = []
+        for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
+            x,y = state
+            dx, dy = Actions.directionToVector(action)
+            nextx, nexty = int(x + dx), int(y + dy)
+            if not self.walls[nextx][nexty]:
+                nextState = (nextx, nexty)
+                cost = self.costFn(nextState)
+                successors.append( ( nextState, action, cost) )
+
+        # Bookkeeping for display purposes
+        self._expanded += 1 # DO NOT CHANGE
+        if state not in self._visited:
+            self._visited[state] = True
+            self._visitedlist.append(state)
+
+        return successors
+
+    def getCostOfActions(self, actions):
+        """
+        Returns the cost of a particular sequence of actions. If those actions
+        include an illegal move, return 999999.
+        """
+        if actions == None: return 999999
+        x,y= self.getStartState()
+        cost = 0
+        for action in actions:
+            # Check figure out the next state and see whether its' legal
+            dx, dy = Actions.directionToVector(action)
+            x, y = int(x + dx), int(y + dy)
+            if self.walls[x][y]: return 999999
+            cost += self.costFn((x,y))
+        return cost
+
 
 class StayEastSearchAgent(SearchAgent):
     """
