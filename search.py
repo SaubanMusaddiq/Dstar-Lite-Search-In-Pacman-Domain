@@ -18,6 +18,8 @@ Pacman agents (in searchAgents.py).
 """
 
 import util
+from functools import partial
+
 
 class SearchProblem:
     """
@@ -262,8 +264,100 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     return path
 
 
+def dStarLiteSearch(problem, heuristic=nullHeuristic):
+    dstar = DStarLiteSearch(problem)
+    path = dstar.computePath()
+    return path
+
+
+class DStarLiteSearch(object):
+    def __init__(self, problem, visibility=2):
+        self.prob = problem
+        self.visibility = visibility
+        self.state = problem.getStartState()
+        self.goal = problem.getGoalState()
+        self.g_map = {}
+        self.rhs_map = {}
+        self.key_modifier = 0
+        self.frontier = util.PriorityQueue()
+        self.frontier.push(self.goal, self.buildKeyTuple(self.goal))
+
+    def consistentNode(self, node):
+        return self.rhsValue(self.state) == self.gValue(self.state)
+
+    def rhsValue(self, node):
+        return 0 if self.prob.isGoalState(node) else self.rhs_map.get(node, float('inf'))
+
+    def gValue(self, node):
+        return self.g_map.get(node, float('inf'))
+
+    def heuristic(self, xy1, xy2):
+        return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
+
+    def computeRhsValue(self, node):
+        return self.lookaheadCost(node, self.minCostSuccessor(node))
+
+    def lookaheadCost(self, node, successor):
+        succ,_,cost = successor
+        return self.gValue(succ) + cost
+
+    def minCostSuccessor(self, node):
+        cost = partial(self.lookaheadCost, node)
+        return min(self.prob.getSuccessors(node), key=cost)
+
+    def buildKeyTuple(self, node):
+        min_g_rhs = min([self.gValue(node), self.rhsValue(node)])
+        return (min_g_rhs + self.heuristic(node, self.state) + self.key_modifier, min_g_rhs)
+
+    def updateNodes(self, nodes):
+        for node in nodes:
+            if not self.prob.isGoalState(node):
+                self.rhs_map[node] = self.computeRhsValue(node)
+            if self.gValue(node) != self.rhsValue(node):
+                self.frontier.update(node, self.buildKeyTuple(node))
+
+    def planPath(self):
+        while not self.frontier.isEmpty() and (self.frontier.nsmallest(1)[0][0] < self.buildKeyTuple(self.state) or not self.consistentNode(self.state)):
+            old_key = self.frontier.nsmallest(1)[0][0]
+            node = self.frontier.pop()
+            new_key = self.buildKeyTuple(node)
+            if old_key < new_key:
+                self.frontier.push(node, new_key)
+            elif self.gValue(node) > self.rhsValue(node): # OverConsistant
+                self.g_map[node] = self.rhsValue(node)
+                successors = [successor for successor,_,_ in self.prob.getSuccessors(node)]
+                self.updateNodes(successors)
+            else:                                          # UnderConsistant
+                self.g_map[node] = float('inf')
+                successors = [successor for successor,_,_ in self.prob.getSuccessors(node)]
+                self.updateNodes(successors + [node])
+        return
+
+    def computePath(self):
+        path = []
+        changed_walls = self.prob.update_walls(self.state, self.visibility)
+        self.planPath()
+        last_starting_state = self.state
+
+        while not self.prob.isGoalState(self.state):
+            if self.gValue(self.state) == float('inf'):
+                raise Exception("Blocked Path")
+
+            self.state, action, cost = self.minCostSuccessor(self.state)
+            changed_walls = self.prob.update_walls(self.state, self.visibility)
+            path.append(action)
+
+            if changed_walls:
+                self.key_modifier += self.heuristic(last_starting_state, self.state)
+                last_starting_state = self.state
+                self.updateNodes({node for wall in changed_walls for node, action, cost in self.prob.getSuccessors(wall)})
+                self.planPath()
+
+        return path
+
 # Abbreviations
 bfs = breadthFirstSearch
 dfs = depthFirstSearch
 astar = aStarSearch
 ucs = uniformCostSearch
+dstar = dStarLiteSearch
