@@ -230,13 +230,13 @@ class GameState:
         """
         x,y = state
         walls = self.getWalls()
-        print(walls)
+        # print(walls)
         local_walls = Grid(walls.width, walls.height)
         for col in range(max(1,x-size),min(walls.width-1,x+size+1)):
             for row in range(max(1,y-size),min(walls.height-1,y+size+1)):
                 local_walls[col][row] = walls[col][row]
-                print(col,row,walls[col][row])
-        print(local_walls)
+                # print(col,row,walls[col][row])
+        # print(local_walls)
 
         return local_walls
 

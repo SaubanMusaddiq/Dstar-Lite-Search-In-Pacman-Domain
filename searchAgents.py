@@ -298,9 +298,11 @@ class LimitedPositionSearchProblem(search.SearchProblem):
         # self.walls = gameState.getWalls()
         self.gstate = gameState
         self.walls = gameState.getHiddenWalls()
+        # print(self.walls)
         self.startState = gameState.getPacmanPosition()
         if start != None: self.startState = start
         self.goal = goal
+        # print("g",self.goal)
         self.costFn = costFn
         self.visualize = visualize
         if warn and (gameState.getNumFood() != 1 or not gameState.hasFood(*goal)):
@@ -310,16 +312,18 @@ class LimitedPositionSearchProblem(search.SearchProblem):
         self._visited, self._visitedlist, self._expanded = {}, [], 0 # DO NOT CHANGE
 
     def update_walls(self, state, size):
-        new_walls = self.gstate.getLocalWalls(state, size)
+        updated_walls = self.gstate.getLocalWalls(state, size)
         # for col in range(1,walls.width-1):
         #     for row in range(1,walls.height-1):
         #         self.walls[col][row] = new_walls[col][row] or self.walls[col][row]
+        new_walls = []
         x,y = state
         for col in range(max(1,x-size),min(self.walls.width-1,x+size+1)):
             for row in range(max(1,y-size),min(self.walls.height-1,y+size+1)):
-                self.walls[col][row] = new_walls[col][row]
-
-        return self.walls
+                if(self.walls[col][row] != updated_walls[col][row]):
+                    new_walls.append((col,row))
+                self.walls[col][row] = updated_walls[col][row]
+        return new_walls
 
     def getStartState(self):
         return self.startState
