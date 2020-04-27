@@ -4,7 +4,7 @@
 # educational purposes provided that (1) you do not distribute or publish
 # solutions, (2) you retain this notice, and (3) you provide clear
 # attribution to UC Berkeley, including a link to http://ai.berkeley.edu.
-#
+# 
 # Attribution Information: The Pacman AI projects were developed at UC Berkeley.
 # The core projects and autograders were primarily created by John DeNero
 # (denero@cs.berkeley.edu) and Dan Klein (klein@cs.berkeley.edu).
@@ -41,7 +41,6 @@ The keys are 'a', 's', 'd', and 'w' to move (or arrow keys).  Have fun!
 """
 from game import GameStateData
 from game import Game
-from game import Grid
 from game import Directions
 from game import Actions
 from util import nearestPoint
@@ -200,45 +199,6 @@ class GameState:
         if walls[x][y] == True: ...
         """
         return self.data.layout.walls
-
-    def getHiddenWalls(self):
-        """
-        Returns a Grid of boolean wall indicator variables.
-
-        Grids can be accessed via list notation, so to check
-        if there is a wall at (x,y), just call
-
-        walls = state.getWalls()
-        if walls[x][y] == True: ...
-        """
-        walls = self.getWalls().copy()
-        for col in range(1,walls.width-1):
-            for row in range(1,walls.height-1):
-                walls[col][row] = False
-
-        return walls
-
-    def getLocalWalls(self, state, size):
-        """
-        Returns a Grid of boolean wall indicator variables.
-
-        Grids can be accessed via list notation, so to check
-        if there is a wall at (x,y), just call
-
-        walls = state.getWalls()
-        if walls[x][y] == True: ...
-        """
-        x,y = state
-        walls = self.getWalls()
-        # print(walls)
-        local_walls = Grid(walls.width, walls.height)
-        for col in range(max(1,x-size),min(walls.width-1,x+size+1)):
-            for row in range(max(1,y-size),min(walls.height-1,y+size+1)):
-                local_walls[col][row] = walls[col][row]
-                # print(col,row,walls[col][row])
-        # print(local_walls)
-
-        return local_walls
 
     def hasFood(self, x, y):
         return self.data.food[x][y]
