@@ -18,6 +18,8 @@ Pacman agents (in searchAgents.py).
 """
 
 import util
+from functools import partial
+
 
 class SearchProblem:
     """
@@ -259,169 +261,99 @@ def aStarSearch(problem, heuristic=nullHeuristic):
         path.append(action)
 
     path.reverse()
-    print(path)
     return path
 
 
 def dStarLiteSearch(problem, heuristic=nullHeuristic):
-    dstar = DStarLite(problem)
-    path = dstar.move_to_goal()
-    # path = [p for p in dstar.move_to_goal()]
-    # print(path)
+    dstar = DStarLiteSearch(problem)
+    path = dstar.computePath()
     return path
-# self.frontier.push(self.goal, self.calculate_key(self.goal))
-# self.back_trace[self.goal] = None
 
 
-from collections import deque
-from functools import partial
-
-
-
-class DStarLite(object):
-    def __init__(self, problem, view_range=2):
-        # Init the graphs
-        # self.graph = AgentViewGrid(graph.width, graph.height)
-        # self.real_graph: SquareGrid = graph
-        self.view_range = view_range
+class DStarLiteSearch(object):
+    def __init__(self, problem, visibility=2):
         self.prob = problem
-        self.back_pointers = {}
-        self.G_VALS = {}
-        self.RHS_VALS = {}
-        self.Km = 0
-        self.position = problem.getStartState()
+        self.visibility = visibility
+        self.state = problem.getStartState()
         self.goal = problem.getGoalState()
+        self.g_map = {}
+        self.rhs_map = {}
+        self.key_modifier = 0
         self.frontier = util.PriorityQueue()
-        self.frontier.push(self.goal, self.calculate_key(self.goal))
-        self.back_pointers[self.goal] = None
-        print("init")
+        self.frontier.push(self.goal, self.buildKeyTuple(self.goal))
 
-    def calculate_rhs(self, node):
-        lowest_cost_neighbour = self.lowest_cost_neighbour(node)
-        self.back_pointers[node] = lowest_cost_neighbour[0]
-        return self.lookahead_cost(node, lowest_cost_neighbour)
+    def consistentNode(self, node):
+        return self.rhsValue(self.state) == self.gValue(self.state)
 
-    def lookahead_cost(self, node, neighbour):
-        # return self.g(neighbour) + self.graph.cost(neighbour, node)
-        neighbour,_,_ = neighbour
-        return self.g(neighbour) + 1
+    def rhsValue(self, node):
+        return 0 if self.prob.isGoalState(node) else self.rhs_map.get(node, float('inf'))
 
-    def lowest_cost_neighbour(self, node):
-        cost = partial(self.lookahead_cost, node)
-        # print(node)
-        # return min(self.graph.neighbors(node), key=cost)
+    def gValue(self, node):
+        return self.g_map.get(node, float('inf'))
+
+    def heuristic(self, xy1, xy2):
+        return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
+
+    def computeRhsValue(self, node):
+        return self.lookaheadCost(node, self.minCostSuccessor(node))
+
+    def lookaheadCost(self, node, successor):
+        succ,_,cost = successor
+        return self.gValue(succ) + cost
+
+    def minCostSuccessor(self, node):
+        cost = partial(self.lookaheadCost, node)
         return min(self.prob.getSuccessors(node), key=cost)
 
-        # neighbors = [neighbour for neighbour,_,_ in self.prob.getSuccessors(node)]
-        # return min(neighbors, key=cost)
-        # # for succ in self.prob.getSuccessors(node):
-        #     neighbour,action,cost = succ
+    def buildKeyTuple(self, node):
+        min_g_rhs = min([self.gValue(node), self.rhsValue(node)])
+        return (min_g_rhs + self.heuristic(node, self.state) + self.key_modifier, min_g_rhs)
 
+    def updateNodes(self, nodes):
+        for node in nodes:
+            if not self.prob.isGoalState(node):
+                self.rhs_map[node] = self.computeRhsValue(node)
+            if self.gValue(node) != self.rhsValue(node):
+                self.frontier.update(node, self.buildKeyTuple(node))
 
-
-    def g(self, node):
-        return self.G_VALS.get(node, float('inf'))
-
-    def rhs(self, node):
-        return self.RHS_VALS.get(node, float('inf')) if node != self.goal else 0
-
-    def heuristic(self, a, b):
-        (x1, y1) = a
-        (x2, y2) = b
-        return abs(x1 - x2) + abs(y1 - y2)
-
-    def calculate_key(self, node):
-        g_rhs = min([self.g(node), self.rhs(node)])
-
-        return (
-            g_rhs + self.heuristic(node, self.position) + self.Km,
-            g_rhs
-        )
-
-    def update_node(self, node):
-        if node != self.goal:
-            self.RHS_VALS[node] = self.calculate_rhs(node)
-        # self.frontier.delete(node)
-        if self.g(node) != self.rhs(node):
-            # self.frontier.put(node, self.calculate_key(node))
-            self.frontier.update(node, self.calculate_key(node))
-
-    def update_nodes(self, nodes):
-        [self.update_node(n) for n in nodes]
-
-    def compute_shortest_path(self):
-        last_nodes = deque(maxlen=10)
-        while not self.frontier.isEmpty() and (self.frontier.nsmallest(1)[0][0] < self.calculate_key(self.position) or self.rhs(self.position) != self.g(self.position)):
-            k_old = self.frontier.nsmallest(1)[0][0]
+    def planPath(self):
+        while not self.frontier.isEmpty() and (self.frontier.nsmallest(1)[0][0] < self.buildKeyTuple(self.state) or not self.consistentNode(self.state)):
+            old_key = self.frontier.nsmallest(1)[0][0]
             node = self.frontier.pop()
-            last_nodes.append(node)
-            if len(last_nodes) == 10 and len(set(last_nodes)) < 3:
-                raise Exception("Fail! Stuck in a loop")
-            k_new = self.calculate_key(node)
-            if k_old < k_new:
-                self.frontier.push(node, k_new)
-            elif self.g(node) > self.rhs(node):
-                self.G_VALS[node] = self.rhs(node)
-                neighbors = [neighbour for neighbour,_,_ in self.prob.getSuccessors(node)]
-                self.update_nodes(neighbors)
-            else:
-                self.G_VALS[node] = float('inf')
-                neighbours = [neighbour for neighbour,_,_ in self.prob.getSuccessors(node)]
-                self.update_nodes(neighbours + [node])
-            # print("5",self.frontier.heap)
-            # print(self.frontier.nsmallest(1)[0][0] , self.calculate_key(self.position))
+            new_key = self.buildKeyTuple(node)
+            if old_key < new_key:
+                self.frontier.push(node, new_key)
+            elif self.gValue(node) > self.rhsValue(node): # OverConsistant
+                self.g_map[node] = self.rhsValue(node)
+                successors = [successor for successor,_,_ in self.prob.getSuccessors(node)]
+                self.updateNodes(successors)
+            else:                                          # UnderConsistant
+                self.g_map[node] = float('inf')
+                successors = [successor for successor,_,_ in self.prob.getSuccessors(node)]
+                self.updateNodes(successors + [node])
+        return
 
-
-        return self.back_pointers.copy(), self.G_VALS.copy()
-
-    def move_to_goal(self):
-        # print("start", self.position)
+    def computePath(self):
         path = []
-        actions = []
-        # observation = self.real_graph.observe(self.position, self.view_range)
-        #
-        # walls = self.graph.new_walls(observation)
-        # self.graph.update_walls(walls)
+        changed_walls = self.prob.update_walls(self.state, self.visibility)
+        self.planPath()
+        last_starting_state = self.state
 
-        # print(self.prob.walls,1)
-        # print(self.position)
-        new_walls = self.prob.update_walls(self.position, self.view_range)
+        while not self.prob.isGoalState(self.state):
+            if self.gValue(self.state) == float('inf'):
+                raise Exception("Blocked Path")
 
-        # print(self.prob.walls)
+            self.state, action, cost = self.minCostSuccessor(self.state)
+            changed_walls = self.prob.update_walls(self.state, self.visibility)
+            path.append(action)
 
-        self.compute_shortest_path()
-        last_position = self.position
-        # return
+            if changed_walls:
+                self.key_modifier += self.heuristic(last_starting_state, self.state)
+                last_starting_state = self.state
+                self.updateNodes({node for wall in changed_walls for node, action, cost in self.prob.getSuccessors(wall)})
+                self.planPath()
 
-        # yield self.position
-        path.append(self.position)
-
-        while self.position != self.goal:
-            if self.g(self.position) == float('inf'):
-                raise Exception("No path")
-
-            self.position,action,cost = self.lowest_cost_neighbour(self.position)
-            new_walls = self.prob.update_walls(self.position, self.view_range)
-            actions.append(action)
-
-            # observation = self.real_graph.observe(self.position, self.view_range)
-            # new_walls = self.graph.new_walls(observation)
-            # print(self.position)
-            # print(self.prob.walls)
-
-            if new_walls:
-                # self.graph.update_walls(new_walls)
-                self.Km += self.heuristic(last_position, self.position)
-                last_position = self.position
-                self.update_nodes({node for wallnode in new_walls
-                                   for node, action, cost in self.prob.getSuccessors(wallnode)})
-                # for node in self.prob.getSuccessors(wallnode):
-                #     nextState, action, cost = successor
-                #
-                self.compute_shortest_path()
-            # yield self.position
-            # return
-        return actions
+        return path
 
 # Abbreviations
 bfs = breadthFirstSearch

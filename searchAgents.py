@@ -156,7 +156,6 @@ class PositionSearchProblem(search.SearchProblem):
         goal: A position in the gameState
         """
         self.walls = gameState.getWalls()
-        print(self.walls)
         self.startState = gameState.getPacmanPosition()
         if start != None: self.startState = start
         self.goal = goal
@@ -239,41 +238,8 @@ class LimitedSearchAgent(SearchAgent):
     The cost function for stepping into a position (x,y) is 1/2^x.
     """
     def __init__(self):
-        self.searchFunction = search.dStarLiteSearch
+        self.searchFunction = lambda prob: search.dStarLiteSearch(prob)
         self.searchType = LimitedPositionSearchProblem
-        self.range = 2
-        self.back_trace = {}
-        self.rhs_map = {}
-        self.g_map = {}
-        self.km = 0
-        self.position = None
-        self.goal = None
-        self.frontier = util.PriorityQueue()
-
-    # def registerInitialState(self, state):
-    #     """
-    #     This is the first time that the agent sees the layout of the game
-    #     board. Here, we choose a path to the goal. In this phase, the agent
-    #     should compute the path to the goal and store it in a local variable.
-    #     All of the work is done in this method!
-    #
-    #     state: a GameState object (pacman.py)
-    #     """
-    #     self.position = None
-    #     self.goal = None
-    #     # self.frontier.push(self.goal, self.calculate_key(self.goal))
-    #     # self.back_trace[self.goal] = None
-    #
-    #     if self.searchFunction == None: raise Exception, "No search function provided for SearchAgent"
-    #     starttime = time.time()
-    #     problem = self.searchType(state) # Makes a new search problem
-    #     self.position = problem.getStartState()
-    #     self.goal = problem.getGoalState()
-    #     self.actions  = self.searchFunction(problem, self) # Find a path
-    #     totalCost = problem.getCostOfActions(self.actions)
-    #     print('Path found with total cost of %d in %.1f seconds' % (totalCost, time.time() - starttime))
-    #     if '_expanded' in dir(problem): print('Search nodes expanded: %d' % problem._expanded)
-
 
 
 class LimitedPositionSearchProblem(search.SearchProblem):
@@ -295,14 +261,11 @@ class LimitedPositionSearchProblem(search.SearchProblem):
         costFn: A function from a search state (tuple) to a non-negative number
         goal: A position in the gameState
         """
-        # self.walls = gameState.getWalls()
         self.gstate = gameState
         self.walls = gameState.getHiddenWalls()
-        # print(self.walls)
         self.startState = gameState.getPacmanPosition()
         if start != None: self.startState = start
         self.goal = goal
-        # print("g",self.goal)
         self.costFn = costFn
         self.visualize = visualize
         if warn and (gameState.getNumFood() != 1 or not gameState.hasFood(*goal)):
@@ -313,17 +276,14 @@ class LimitedPositionSearchProblem(search.SearchProblem):
 
     def update_walls(self, state, size):
         updated_walls = self.gstate.getLocalWalls(state, size)
-        # for col in range(1,walls.width-1):
-        #     for row in range(1,walls.height-1):
-        #         self.walls[col][row] = new_walls[col][row] or self.walls[col][row]
-        new_walls = []
+        changed_walls = []
         x,y = state
         for col in range(max(1,x-size),min(self.walls.width-1,x+size+1)):
             for row in range(max(1,y-size),min(self.walls.height-1,y+size+1)):
                 if(self.walls[col][row] != updated_walls[col][row]):
-                    new_walls.append((col,row))
+                    changed_walls.append((col,row))
                 self.walls[col][row] = updated_walls[col][row]
-        return new_walls
+        return changed_walls
 
     def getStartState(self):
         return self.startState
@@ -334,13 +294,13 @@ class LimitedPositionSearchProblem(search.SearchProblem):
     def isGoalState(self, state):
         isGoal = state == self.goal
 
-        # For display purposes only
-        if isGoal and self.visualize:
-            self._visitedlist.append(state)
-            import __main__
-            if '_display' in dir(__main__):
-                if 'drawExpandedCells' in dir(__main__._display): #@UndefinedVariable
-                    __main__._display.drawExpandedCells(self._visitedlist) #@UndefinedVariable
+        # # For display purposes only
+        # if isGoal and self.visualize:
+        #     self._visitedlist.append(state)
+        #     import __main__
+        #     if '_display' in dir(__main__):
+        #         if 'drawExpandedCells' in dir(__main__._display): #@UndefinedVariable
+        #             __main__._display.drawExpandedCells(self._visitedlist) #@UndefinedVariable
 
         return isGoal
 
