@@ -238,7 +238,7 @@ class LimitedSearchAgent(SearchAgent):
     The cost function for stepping into a position (x,y) is 1/2^x.
     """
     def __init__(self):
-        self.searchFunction = lambda prob: search.dStarLiteSearch(prob)
+        self.searchFunction = lambda prob: search.lpaStar(prob)
         self.searchType = LimitedPositionSearchProblem
 
 

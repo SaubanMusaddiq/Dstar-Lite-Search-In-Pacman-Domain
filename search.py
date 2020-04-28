@@ -264,13 +264,13 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     return path
 
 
-def dStarLiteSearch(problem, heuristic=nullHeuristic):
-    dstar = DStarLiteSearch(problem)
-    path = dstar.computePath()
+def lpaStar(problem, heuristic=nullHeuristic):
+    lpastar = lpaStarSearch(problem)
+    path = lpastar.computePath()
     return path
 
 
-class DStarLiteSearch(object):
+class lpaStarSearch(object):
     def __init__(self, problem, visibility=2):
         self.prob = problem
         self.visibility = visibility
@@ -278,7 +278,7 @@ class DStarLiteSearch(object):
         self.goal = problem.getGoalState()
         self.g_map = {}
         self.rhs_map = {}
-        self.key_modifier = 0
+        # self.key_modifier = 0
         self.frontier = util.PriorityQueue()
         self.frontier.push(self.goal, self.buildKeyTuple(self.goal))
 
@@ -307,23 +307,28 @@ class DStarLiteSearch(object):
 
     def buildKeyTuple(self, node):
         min_g_rhs = min([self.gValue(node), self.rhsValue(node)])
-        return (min_g_rhs + self.heuristic(node, self.state) + self.key_modifier, min_g_rhs)
+        return (min_g_rhs + self.heuristic(node, self.goal), min_g_rhs)
 
     def updateNodes(self, nodes):
+        # for node in nodes:
+        #     if not self.prob.isGoalState(node):
+        #         self.rhs_map[node] = self.computeRhsValue(node)
+        #     if self.gValue(node) != self.rhsValue(node):
+        #         self.frontier.update(node, self.buildKeyTuple(node))
         for node in nodes:
-            if not self.prob.isGoalState(node):
+            if node != self.state:
                 self.rhs_map[node] = self.computeRhsValue(node)
-            if self.gValue(node) != self.rhsValue(node):
+            if self.gValue(node) != self.rhsValue(node): # Insert & Remove?
                 self.frontier.update(node, self.buildKeyTuple(node))
 
     def planPath(self):
-        while not self.frontier.isEmpty() and (self.frontier.nsmallest(1)[0][0] < self.buildKeyTuple(self.state) or not self.consistentNode(self.state)):
-            old_key = self.frontier.nsmallest(1)[0][0]
+        while not self.frontier.isEmpty() and (self.frontier.nsmallest(1)[0][0] < self.buildKeyTuple(self.goal) or not self.consistentNode(self.goal)): # change the startState to goal state
             node = self.frontier.pop()
-            new_key = self.buildKeyTuple(node)
-            if old_key < new_key:
-                self.frontier.push(node, new_key)
-            elif self.gValue(node) > self.rhsValue(node): # OverConsistant
+            # old_key = self.frontier.nsmallest(1)[0][0]
+            # new_key = self.buildKeyTuple(node)
+            # if old_key < new_key:
+            #     self.frontier.push(node, new_key)
+            if self.gValue(node) > self.rhsValue(node): # OverConsistant
                 self.g_map[node] = self.rhsValue(node)
                 successors = [successor for successor,_,_ in self.prob.getSuccessors(node)]
                 self.updateNodes(successors)
@@ -335,21 +340,22 @@ class DStarLiteSearch(object):
 
     def computePath(self):
         path = []
-        changed_walls = self.prob.update_walls(self.state, self.visibility)
-        self.planPath()
-        last_starting_state = self.state
+        # changed_walls = self.prob.update_walls(self.state, self.visibility)
+        # self.planPath()
+        # last_starting_state = self.state
 
-        while not self.prob.isGoalState(self.state):
+        while not self.prob.isGoalState(self.state): # forever
+
             if self.gValue(self.state) == float('inf'):
                 raise Exception("Blocked Path")
-
+            self.planPath()
             self.state, action, cost = self.minCostSuccessor(self.state)
             changed_walls = self.prob.update_walls(self.state, self.visibility)
             path.append(action)
 
             if changed_walls:
-                self.key_modifier += self.heuristic(last_starting_state, self.state)
-                last_starting_state = self.state
+                # self.key_modifier += self.heuristic(last_starting_state, self.state)
+                # last_starting_state = self.state
                 self.updateNodes({node for wall in changed_walls for node, action, cost in self.prob.getSuccessors(wall)})
                 self.planPath()
 
@@ -360,4 +366,4 @@ bfs = breadthFirstSearch
 dfs = depthFirstSearch
 astar = aStarSearch
 ucs = uniformCostSearch
-dstar = dStarLiteSearch
+lpastar = lpaStar
