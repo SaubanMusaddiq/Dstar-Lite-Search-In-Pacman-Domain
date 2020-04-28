@@ -315,30 +315,41 @@ def calcstar(snode, goal, walls):
         
 
 
-def astar2(problem, heuristic=nullHeuristic):
+def astar2(problem, view_range=2):
     goal= problem.goal
     cstate = problem.startState
     wlist = []
-    walls=problem.walls
-    cost = 0
     knownwalls = []
+    cost = 0
+    walls = problem.walls
+    for i in range(0, walls.height):
+        knownwalls.append((0, i))
+        knownwalls.append((walls.width, i))
+    for i in range(0, walls.width):
+        knownwalls.append((i, 0))
+        knownwalls.append((i, walls.height))
     cnode = pnode(cstate, wlist, 0)
-    hval=heuristic(cnode.getstate(), problem)
+    #hval=heuristic(cnode.getstate(), problem)
     sQueue = util.PriorityQueue() 
     directions = calcstar(cnode, goal, knownwalls)
     while not problem.isGoalState(cnode.getstate()):
+        pos = cnode.getstate()
+        for i in range(max(1,pos[0]-view_range),min(walls.width,pos[0]+view_range)):
+            for j in range(max(1,pos[1]-view_range),min(walls.height,pos[1]+view_range)):
+                if walls[i][j]==True:
+                    knownwalls.append((i,j))
         successors = problem.getSuccessors(cnode.getstate())
-        qlist = []
-        for successor in successors: #adding perceivable walls
-            qlist.append(successor[0])
-        if ((cnode.getstate()[0],cnode.getstate()[1]+1) not in qlist) and ((cnode.getstate()[0],cnode.getstate()[1]+1) not in knownwalls):
-            knownwalls.append((cnode.getstate()[0],cnode.getstate()[1]+1))
-        if ((cnode.getstate()[0],cnode.getstate()[1]-1) not in qlist) and ((cnode.getstate()[0],cnode.getstate()[1]-1) not in knownwalls):
-            knownwalls.append((cnode.getstate()[0],cnode.getstate()[1]-1))
-        if ((cnode.getstate()[0]+1,cnode.getstate()[1]) not in qlist) and ((cnode.getstate()[0]+1,cnode.getstate()[1]) not in knownwalls):
-            knownwalls.append((cnode.getstate()[0]+1,cnode.getstate()[1]))
-        if ((cnode.getstate()[0]-1,cnode.getstate()[1]) not in qlist) and ((cnode.getstate()[0]-1,cnode.getstate()[1]) not in knownwalls):
-            knownwalls.append((cnode.getstate()[0]-1,cnode.getstate()[1]))
+#        qlist = []
+#        for successor in successors: #adding perceivable walls
+#            qlist.append(successor[0])
+#        if ((cnode.getstate()[0],cnode.getstate()[1]+1) not in qlist) and ((cnode.getstate()[0],cnode.getstate()[1]+1) not in knownwalls):
+#            knownwalls.append((cnode.getstate()[0],cnode.getstate()[1]+1))
+#        if ((cnode.getstate()[0],cnode.getstate()[1]-1) not in qlist) and ((cnode.getstate()[0],cnode.getstate()[1]-1) not in knownwalls):
+#            knownwalls.append((cnode.getstate()[0],cnode.getstate()[1]-1))
+#        if ((cnode.getstate()[0]+1,cnode.getstate()[1]) not in qlist) and ((cnode.getstate()[0]+1,cnode.getstate()[1]) not in knownwalls):
+#            knownwalls.append((cnode.getstate()[0]+1,cnode.getstate()[1]))
+#        if ((cnode.getstate()[0]-1,cnode.getstate()[1]) not in qlist) and ((cnode.getstate()[0]-1,cnode.getstate()[1]) not in knownwalls):
+#            knownwalls.append((cnode.getstate()[0]-1,cnode.getstate()[1]))
         direction = directions.pop(0)
         t = 0
         if direction=="North":
