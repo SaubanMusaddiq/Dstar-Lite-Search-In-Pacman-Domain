@@ -317,6 +317,7 @@ class LimitedPositionSearchProblem(search.SearchProblem):
         """
 
         successors = []
+        # print(state)
         for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
             x,y = state
             dx, dy = Actions.directionToVector(action)
@@ -325,6 +326,15 @@ class LimitedPositionSearchProblem(search.SearchProblem):
                 nextState = (nextx, nexty)
                 cost = self.costFn(nextState)
                 successors.append( ( nextState, action, cost) )
+
+            # if(nextx == 0 or nextx == self.walls.width -1 or nexty == 0 or nexty == self.walls.height-1):
+            #     continue
+            # nextState = (nextx, nexty)
+            # if self.walls[nextx][nexty]:
+            #     cost = 1000
+            # else:
+            #     cost = self.costFn(nextState)
+            # successors.append( ( nextState, action, cost) )
 
         # Bookkeeping for display purposes
         self._expanded += 1 # DO NOT CHANGE

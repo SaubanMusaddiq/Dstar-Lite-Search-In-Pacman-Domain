@@ -274,23 +274,32 @@ class lpaStarSearch(object):
     def __init__(self, problem, visibility=2):
         self.prob = problem
         self.visibility = visibility
-        self.state = problem.getStartState()
+        self.start = problem.getStartState()
         self.goal = problem.getGoalState()
         self.g_map = {}
         self.rhs_map = {}
-        self.rhs_map[self.state] = 0
+        self.rhs_map[self.start] = 0
         # self.key_modifier = 0
+        self.state = self.start
         self.frontier = util.PriorityQueue()
-        self.frontier.push(self.state, self.buildKeyTuple(self.goal))
+        self.frontier.push(self.start, self.buildKeyTuple(self.start))
+        # print(self.buildKeyTuple(self.goal))
 
     def consistentNode(self, node):
-        return self.rhsValue(self.state) == self.gValue(self.state)
+        return self.rhsValue(node) == self.gValue(node)
 
     def rhsValue(self, node):
-        return 0 if self.prob.isGoalState(node) else self.rhs_map.get(node, float('inf'))
+        # return 0 if self.prob.isGoalState(node) else self.rhs_map.get(node, float('inf'))
+        return self.rhs_map.get(node, float('inf'))
 
     def gValue(self, node):
         return self.g_map.get(node, float('inf'))
+
+    def fValue(self, node):
+        node,_,cost = node
+        min_g_rhs = min([self.gValue(node), self.rhsValue(node)])
+        print("f",node,min_g_rhs + self.heuristic(node, self.goal) )
+        return min_g_rhs + self.heuristic(node, self.goal)
 
     def heuristic(self, xy1, xy2):
         return abs(xy1[0] - xy2[0]) + abs(xy1[1] - xy2[1])
@@ -304,7 +313,27 @@ class lpaStarSearch(object):
 
     def minCostSuccessor(self, node):
         cost = partial(self.lookaheadCost, node)
-        return min(self.prob.getSuccessors(node), key=cost)
+        return max(self.prob.getSuccessors(node), key=cost)
+
+    def findSuccessor(self,node):
+        print("find Succ", node)
+        min_f = min([self.fValue(succ) for succ in self.prob.getSuccessors(node)])
+        max = 0
+        maxn = None
+        print(min_f)
+        for succ in self.prob.getSuccessors(node):
+            if(self.fValue(succ) == min_f):
+                node,_,_ =  succ
+                print(node)
+                min_g_rhs = min([self.gValue(node), self.rhsValue(node)])
+                if(min_g_rhs > max):
+                    maxn = succ
+                    max = min_g_rhs
+        print(maxn)
+        return maxn
+
+    def minCostSuccessorValue(self, node):
+        return min([self.lookaheadCost(node,succ) for succ in self.prob.getSuccessors(node)])
 
     def buildKeyTuple(self, node):
         min_g_rhs = min([self.gValue(node), self.rhsValue(node)])
@@ -322,16 +351,21 @@ class lpaStarSearch(object):
         #     if self.gValue(node) != self.rhsValue(node): # Insert & Remove?
         #         self.frontier.update(node, self.buildKeyTuple(node))
         print(nodes)
+        print(self.g_map)
+        print(self.rhs_map)
         for node in nodes:
-            if (node != self.state):
-                self.rhs_map[node] = self.minCostSuccessor(node);
-                self.frontier.delete(node)
+            if (node != self.start):
+                self.rhs_map[node] = self.minCostSuccessorValue(node)
                 if (self.gValue(node) != self.rhsValue(node)):
-                    self.frontier.push(node, self.buildKeyTuple(node))
+                    self.frontier.update(node, self.buildKeyTuple(node))
+                    print("Up",node,self.gValue(node), self.rhsValue(node) ,self.buildKeyTuple(node))
+                else:
+                    self.frontier.delete(node)
 
 
     def planPath(self):
         while not self.frontier.isEmpty() and (self.frontier.nsmallest(1)[0][0] < self.buildKeyTuple(self.goal) or not self.consistentNode(self.goal)): # change the startState to goal state
+            print("plan, Front",self.frontier.heap)
             # old_key = self.frontier.nsmallest(1)[0][0]
             node = self.frontier.pop()
             # new_key = self.buildKeyTuple(node)
@@ -339,6 +373,7 @@ class lpaStarSearch(object):
             # if old_key < new_key:
             #     print(old_key, new_key)
             if self.gValue(node) > self.rhsValue(node): # OverConsistant
+                print("&&&&&&&&&&&&&&&&&&&&&&77",node,self.gValue(node),  self.rhsValue(node))
                 self.g_map[node] = self.rhsValue(node)
                 successors = [successor for successor,_,_ in self.prob.getSuccessors(node)]
                 self.updateNodes(successors)
@@ -347,33 +382,37 @@ class lpaStarSearch(object):
                 successors = [successor for successor,_,_ in self.prob.getSuccessors(node)]
                 self.updateNodes(successors + [node])
             print(1)
-            return
+
         return
 
     def computePath(self):
         path = []
-        # changed_walls = self.prob.update_walls(self.state, self.visibility)
+        changed_walls = self.prob.update_walls(self.state, self.visibility)
         # self.planPath()
         # last_starting_state = self.state
-
+        i = 0
         while not self.prob.isGoalState(self.state): # forever
+            i+=1
 
             # if self.gValue(self.state) == float('inf'):
             #     raise Exception("Blocked Path")
+            print("nexti",i,self.state)
             self.planPath()
             print(self.state)
-            self.state, action, cost = self.minCostSuccessor(self.state)
+            # self.state, action, cost = self.minCostSuccessor(self.state)
+            self.state, action, cost = self.findSuccessor(self.state)
             print(action)
+            path.append(action)
+            if(i == 10):
+                break
 
             changed_walls = self.prob.update_walls(self.state, self.visibility)
-            path.append(action)
             print(changed_walls)
             if changed_walls:
                 # self.key_modifier += self.heuristic(last_starting_state, self.state)
                 # last_starting_state = self.state
                 self.updateNodes({node for wall in changed_walls for node, action, cost in self.prob.getSuccessors(wall)})
                 # self.planPath()
-            break
         return path
 
 # Abbreviations
