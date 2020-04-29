@@ -278,9 +278,10 @@ class lpaStarSearch(object):
         self.goal = problem.getGoalState()
         self.g_map = {}
         self.rhs_map = {}
+        self.rhs_map[self.state] = 0
         # self.key_modifier = 0
         self.frontier = util.PriorityQueue()
-        self.frontier.push(self.goal, self.buildKeyTuple(self.goal))
+        self.frontier.push(self.state, self.buildKeyTuple(self.goal))
 
     def consistentNode(self, node):
         return self.rhsValue(self.state) == self.gValue(self.state)
@@ -315,19 +316,28 @@ class lpaStarSearch(object):
         #         self.rhs_map[node] = self.computeRhsValue(node)
         #     if self.gValue(node) != self.rhsValue(node):
         #         self.frontier.update(node, self.buildKeyTuple(node))
+        # for node in nodes:
+        #     if node != self.state:
+        #         self.rhs_map[node] = self.computeRhsValue(node)
+        #     if self.gValue(node) != self.rhsValue(node): # Insert & Remove?
+        #         self.frontier.update(node, self.buildKeyTuple(node))
+        print(nodes)
         for node in nodes:
-            if node != self.state:
-                self.rhs_map[node] = self.computeRhsValue(node)
-            if self.gValue(node) != self.rhsValue(node): # Insert & Remove?
-                self.frontier.update(node, self.buildKeyTuple(node))
+            if (node != self.state):
+                self.rhs_map[node] = self.minCostSuccessor(node);
+                self.frontier.delete(node)
+                if (self.gValue(node) != self.rhsValue(node)):
+                    self.frontier.push(node, self.buildKeyTuple(node))
+
 
     def planPath(self):
         while not self.frontier.isEmpty() and (self.frontier.nsmallest(1)[0][0] < self.buildKeyTuple(self.goal) or not self.consistentNode(self.goal)): # change the startState to goal state
-            node = self.frontier.pop()
             # old_key = self.frontier.nsmallest(1)[0][0]
+            node = self.frontier.pop()
             # new_key = self.buildKeyTuple(node)
-            # if old_key < new_key:
             #     self.frontier.push(node, new_key)
+            # if old_key < new_key:
+            #     print(old_key, new_key)
             if self.gValue(node) > self.rhsValue(node): # OverConsistant
                 self.g_map[node] = self.rhsValue(node)
                 successors = [successor for successor,_,_ in self.prob.getSuccessors(node)]
@@ -336,6 +346,8 @@ class lpaStarSearch(object):
                 self.g_map[node] = float('inf')
                 successors = [successor for successor,_,_ in self.prob.getSuccessors(node)]
                 self.updateNodes(successors + [node])
+            print(1)
+            return
         return
 
     def computePath(self):
@@ -346,19 +358,22 @@ class lpaStarSearch(object):
 
         while not self.prob.isGoalState(self.state): # forever
 
-            if self.gValue(self.state) == float('inf'):
-                raise Exception("Blocked Path")
+            # if self.gValue(self.state) == float('inf'):
+            #     raise Exception("Blocked Path")
             self.planPath()
+            print(self.state)
             self.state, action, cost = self.minCostSuccessor(self.state)
+            print(action)
+
             changed_walls = self.prob.update_walls(self.state, self.visibility)
             path.append(action)
-
+            print(changed_walls)
             if changed_walls:
                 # self.key_modifier += self.heuristic(last_starting_state, self.state)
                 # last_starting_state = self.state
                 self.updateNodes({node for wall in changed_walls for node, action, cost in self.prob.getSuccessors(wall)})
-                self.planPath()
-
+                # self.planPath()
+            break
         return path
 
 # Abbreviations
