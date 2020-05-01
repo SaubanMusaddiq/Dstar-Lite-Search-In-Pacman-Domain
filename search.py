@@ -62,7 +62,7 @@ class SearchProblem:
         The sequence must be composed of legal moves.
         """
         util.raiseNotDefined()
-        
+
 class pnode:
     def __init__(self, nstate, acts, cost):
         self.state = nstate
@@ -312,7 +312,8 @@ def calcstar(snode, goal, walls):
 
 
 
-def astar2(problem, view_range=2):
+def astar2(problem, heuristic, visibility=2):
+    view_range = visibility
     goal= problem.goal
     cstate = problem.startState
     wlist = []
@@ -368,8 +369,8 @@ def astar2(problem, view_range=2):
 
 
 
-def dStarLiteSearch(problem, heuristic=nullHeuristic):
-    dstar = DStarLiteSearch(problem)
+def dStarLiteSearch(problem, heuristic=nullHeuristic,visibility=2):
+    dstar = DStarLiteSearch(problem,visibility)
     path = dstar.computePath()
     return path
 
