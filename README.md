@@ -1,4 +1,4 @@
-# Team name: Everyone Except Ryker (Team 29)
+# Team name: Dstar Lite Search in Pacman Doamain (Team 29)
 
 # Names of team members:
 Linzhen Luo, Daniel Mathew, Karl McPhee, and Sauban Mussaddique
