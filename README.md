@@ -13,11 +13,8 @@ Linzhen Luo, Daniel Mathew, Karl McPhee, and Sauban Mussaddique
 > - Sauban Mussaddique created and edited the D* Lite and suggested improvements for A*
 
 # Instructions to run code from scratch
-> - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
-> - python pacman.py -l mediumMaze -z 1 -p LimitedSearchAgent
-> - python pacman.py -l bigMaze -z 1 -p LimitedSearchAgent
 
-# To run DStarLite
+### To run DStarLite
 
 > - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
 python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
@@ -29,11 +26,11 @@ python pacman.py -l bigMaze -z 0.5 -p LimitedSearchAgent
 python pacman.py -l bigMaze -z 0.5 -p LimitedSearchAgent -a fn=dstar,visibility=8
 
 
-# To run Blind aStarSearch
+### To run Blind aStarSearch
 > - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
 python pacman.py -l bigMaze -z .5 -p SearchAgent -a fn=astar2,heuristic=manhattanHeuristic
 
 
-# To run aStarSearch, breadthFirstSearch, uniformCostSearch, depthFirstSearch
+### To run aStarSearch, breadthFirstSearch, uniformCostSearch, depthFirstSearch
 > - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
 python pacman.py -l bigMaze -z .5 -p SearchAgent -a fn=astar,heuristic=manhattanHeuristic
