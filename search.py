@@ -388,7 +388,7 @@ class DStarLiteSearch(object):
         self.frontier.push(self.goal, self.buildKeyTuple(self.goal))
 
     def consistentNode(self, node):
-        return self.rhsValue(self.state) == self.gValue(self.state)
+        return self.rhsValue(node) == self.gValue(node)
 
     def rhsValue(self, node):
         return 0 if self.prob.isGoalState(node) else self.rhs_map.get(node, float('inf'))
@@ -418,6 +418,7 @@ class DStarLiteSearch(object):
         for node in nodes:
             if not self.prob.isGoalState(node):
                 self.rhs_map[node] = self.computeRhsValue(node)
+            self.frontier.delete(node)
             if self.gValue(node) != self.rhsValue(node):
                 self.frontier.update(node, self.buildKeyTuple(node))
 

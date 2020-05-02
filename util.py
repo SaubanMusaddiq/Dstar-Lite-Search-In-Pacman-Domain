@@ -188,6 +188,10 @@ class PriorityQueue:
         (_, _, item) = heapq.heappop(self.heap)
         return item
 
+    def delete(self, node):
+        self.elements = [h for h in self.heap if h[2] != node]
+        heapq.heapify(self.heap)    
+
     def nsmallest(self,n):
         return heapq.nsmallest(n, self.heap)
 
