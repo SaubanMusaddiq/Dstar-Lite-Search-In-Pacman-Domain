@@ -17,20 +17,14 @@ Linzhen Luo, Daniel Mathew, Karl McPhee, and Sauban Mussaddique
 ### To run DStarLite
 
 > - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
-python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
-> - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
-python pacman.py -l mediumMaze -z 1 -p LimitedSearchAgent
-> - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
-python pacman.py -l bigMaze -z 0.5 -p LimitedSearchAgent
-> - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
-python pacman.py -l bigMaze -z 0.5 -p LimitedSearchAgent -a fn=dstar,visibility=8
+> - python pacman.py -l mediumMaze -z 1 -p LimitedSearchAgent
+> - python pacman.py -l bigMaze -z 0.5 -p LimitedSearchAgent
+> - python pacman.py -l bigMaze -z 0.5 -p LimitedSearchAgent -a fn=dstar,visibility=8
 
 
 ### To run Blind aStarSearch
-> - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
-python pacman.py -l bigMaze -z .5 -p SearchAgent -a fn=astar2,heuristic=manhattanHeuristic
+> - python pacman.py -l bigMaze -z .5 -p SearchAgent -a fn=astar2,heuristic=manhattanHeuristic
 
 
 ### To run aStarSearch, breadthFirstSearch, uniformCostSearch, depthFirstSearch
-> - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
-python pacman.py -l bigMaze -z .5 -p SearchAgent -a fn=astar,heuristic=manhattanHeuristic
+> - python pacman.py -l bigMaze -z .5 -p SearchAgent -a fn=astar,heuristic=manhattanHeuristic
