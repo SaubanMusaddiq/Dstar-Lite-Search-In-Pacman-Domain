@@ -19,7 +19,7 @@ Linzhen Luo, Daniel Mathew, Karl McPhee, and Sauban Mussaddique
 > - python pacman.py -l tinyMaze -z 1 -p LimitedSearchAgent
 > - python pacman.py -l mediumMaze -z 1 -p LimitedSearchAgent
 > - python pacman.py -l bigMaze -z 0.5 -p LimitedSearchAgent
-> - python pacman.py -l bigMaze -z 0.5 -p LimitedSearchAgent -a fn=dstar,visibility=8
+> - python pacman.py -l bigMaze -z 0.5 -p LimitedSearchAgent -a fn=dstar,visibility=2
 
 
 ### To run Blind aStarSearch
